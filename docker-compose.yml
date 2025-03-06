@@ -21,9 +21,9 @@ services:
       REDIS_PORT: 6379
 
   db:
-    image: mysql:8
+    image: docker.arvancloud.ir/mysql:8
     ports:
-      - "3306:3306"
+      - "3309:3306"
     environment:
       MYSQL_DATABASE: url_shortener
       MYSQL_USER: urluser
@@ -34,7 +34,7 @@ services:
       - ./schemas/db-schema.sql:/docker-entrypoint-initdb.d/db-schema.sql
 
   redis:
-    image: redis:7
+    image: docker.arvancloud.ir/redis:7
     ports:
       - "6379:6379"
     volumes:

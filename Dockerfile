@@ -1,11 +1,13 @@
-FROM php:8.2-fpm
+FROM docker.arvancloud.ir/php:8.2-apache
 
 # Install dependencies
 RUN apt-get update && apt-get install -y \
     libzip-dev \
+    libgmp-dev \
     zip \
     unzip \
     git \
+    && docker-php-ext-install gmp \
     && docker-php-ext-install pdo_mysql zip
 
 # Enable Apache mod_rewrite
