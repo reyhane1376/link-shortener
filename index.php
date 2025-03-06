@@ -1,5 +1,5 @@
 <?php
-require __DIR__ . '/../vendor/autoload.php';
+require __DIR__ . '/vendor/autoload.php';
 
 session_start();
 date_default_timezone_set(timezoneId: "Asia/Tehran");
@@ -28,7 +28,7 @@ header("X-XSS-Protection: 1; mode=block");
 
 
 //helpers
-require_once __DIR__ . '/../src/Helpers/helpers.php';
+require_once __DIR__ . '/src/Helpers/helpers.php';
 
 //routing
-require_once __DIR__ . '/../routes/api.php';
+require_once __DIR__ . '/routes/api.php';

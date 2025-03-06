@@ -1,37 +1,37 @@
-version: '3'
-
 services:
   app:
     build:
       context: .
       dockerfile: Dockerfile
     ports:
-      - "80:80"
+      - "8089:80"
     volumes:
       - ./:/var/www/html
     depends_on:
       - db
       - redis
     environment:
+      DB_CONNECTION: mysql
       DB_HOST: db
       DB_DATABASE: url_shortener
       DB_USERNAME: urluser
       DB_PASSWORD: urlpassword
-      DB_PORT: 5432
+      DB_PORT: 3306
       REDIS_HOST: redis
       REDIS_PORT: 6379
 
   db:
-    image: postgres:16
+    image: mysql:8
     ports:
-      - "5432:5432"
+      - "3306:3306"
     environment:
-      POSTGRES_DB: url_shortener
-      POSTGRES_USER: urluser
-      POSTGRES_PASSWORD: urlpassword
+      MYSQL_DATABASE: url_shortener
+      MYSQL_USER: urluser
+      MYSQL_PASSWORD: urlpassword
+      MYSQL_ROOT_PASSWORD: rootpassword
     volumes:
-      - db_data:/var/lib/postgresql/data
-      - ./db-schema.sql:/docker-entrypoint-initdb.d/db-schema.sql
+      - db_data:/var/lib/mysql
+      - ./schemas/db-schema.sql:/docker-entrypoint-initdb.d/db-schema.sql
 
   redis:
     image: redis:7
