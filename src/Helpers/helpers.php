@@ -1,10 +1,33 @@
 <?php
 
+use App\Exceptions\AppException;
+use App\Models\User;
 use Parsidev\Jalali\jDate;
 
 
 //require configuration
 require_once __DIR__ . '/../../config/config.php';
+
+
+function authenticate() {
+    // Get the Authorization header
+    $headers = getallheaders();
+    $authHeader = $headers['Authorization'] ?? '';
+    
+    // Check if the Authorization header is present
+    if (empty($authHeader) || !preg_match('/Bearer\s(\S+)/', $authHeader, $matches)) {
+        throw new AppException("Authentication required", 401);
+    }
+    
+    $token = $matches[1];
+    
+    // Verify the token
+    $userModel = new User();
+    $payload = $userModel->verifyToken($token);
+    
+    // Return the user ID
+    return $payload['user_id'];
+}
 
 function uri($reservedUrl, $class, $method, $methodField = "GET")
 {
@@ -156,15 +179,3 @@ function old($name)
     }
 }
 
-
-
-function jDate($date, $format = null)
-{
-    // return jDate::forge()->format('%B %d، %Y');
-    // return jDate::forge()->format('date');
-    if (!$format) {
-        return jDate::forge($date)->format('date');
-    } else {
-        return jDate::forge($date)->format($format);
-    }
-}

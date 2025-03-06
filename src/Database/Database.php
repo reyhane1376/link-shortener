@@ -24,6 +24,12 @@ class Database
         }
     }
 
+
+    public function getConnection(): PDO
+    {
+        return $this->connection;
+    }
+
     // select("select * from user");
     // select("select * from user where id = ?", [2]);
     public function select($sql, $values = null)
@@ -103,6 +109,17 @@ class Database
         } catch (PDOException $e) {
             echo 'Error : ' . $e->getMessage();
             exit;
+        }
+    }
+
+
+    public function execute(string $sql, array $values = []): bool
+    {
+        try {
+            $stmt = $this->connection->prepare($sql);
+            return $stmt->execute($values);
+        } catch (PDOException $e) {
+            throw new PDOException("Database execute error: " . $e->getMessage());
         }
     }
 }
