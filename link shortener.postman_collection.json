@@ -28,11 +28,11 @@
 							}
 						},
 						"url": {
-							"raw": "localhost:8000/api/v1/register",
+							"raw": "localhost:8089/api/v1/register",
 							"host": [
 								"localhost"
 							],
-							"port": "8000",
+							"port": "8089",
 							"path": [
 								"api",
 								"v1",
@@ -52,7 +52,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"username\": \"tesftufser\",\n    \"password\": \"123456\",\n    \"email\": \"tefsft@example.com\"\n}",
+							"raw": "{\n    \"username\": \"tesffftufser\",\n    \"password\": \"Abcd@6378\",\n    \"email\": \"tefsft@example.com\"\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -60,11 +60,11 @@
 							}
 						},
 						"url": {
-							"raw": "localhost:8000/api/v1/login",
+							"raw": "localhost:8089/api/v1/login",
 							"host": [
 								"localhost"
 							],
-							"port": "8000",
+							"port": "8089",
 							"path": [
 								"api",
 								"v1",
@@ -87,7 +87,7 @@
 							"bearer": [
 								{
 									"key": "token",
-									"value": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJsb2NhbGhvc3Q6ODAwMCIsImlhdCI6MTc0MTI2MjQwNS41OTg5NDIsImV4cCI6MTc0MTM0ODgwNS41OTg5NDIsInVzZXJfaWQiOjEsInVzZXJuYW1lIjoidGVzdHVzZXIifQ.DV_7JkhrFmwpxpEsyIwgIWweF4wZptBVILOGGa7hCTs",
+									"value": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJsb2NhbGhvc3Q6ODA4OSIsImlhdCI6MTc0MTI5MzY5NS42ODQwMzIsImV4cCI6MTc0MTM4MDA5NS42ODQwMzIsInVzZXJfaWQiOjEsInVzZXJuYW1lIjoidGVzZmZmdHVmc2VyIn0.RYbdIZOb6HxjiJY4I5nDILheY7-OYMShnjVXei_Ty-0",
 									"type": "string"
 								}
 							]
@@ -104,11 +104,11 @@
 							}
 						},
 						"url": {
-							"raw": "localhost:8000/api/v1/links",
+							"raw": "localhost:8089/api/v1/links",
 							"host": [
 								"localhost"
 							],
-							"port": "8000",
+							"port": "8089",
 							"path": [
 								"api",
 								"v1",
@@ -134,11 +134,11 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "localhost:8000/api/v1/links/1",
+							"raw": "localhost:8089/api/v1/links/1",
 							"host": [
 								"localhost"
 							],
-							"port": "8000",
+							"port": "8089",
 							"path": [
 								"api",
 								"v1",
@@ -174,16 +174,16 @@
 							}
 						},
 						"url": {
-							"raw": "localhost:8000/api/v1/links/9",
+							"raw": "localhost:8089/api/v1/links/1",
 							"host": [
 								"localhost"
 							],
-							"port": "8000",
+							"port": "8089",
 							"path": [
 								"api",
 								"v1",
 								"links",
-								"9"
+								"1"
 							]
 						}
 					},
@@ -205,11 +205,11 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "localhost:8000/api/v1/links",
+							"raw": "localhost:8089/api/v1/links",
 							"host": [
 								"localhost"
 							],
-							"port": "8000",
+							"port": "8089",
 							"path": [
 								"api",
 								"v1",
@@ -235,16 +235,16 @@
 						"method": "DELETE",
 						"header": [],
 						"url": {
-							"raw": "localhost:8000/api/v1/links/8",
+							"raw": "localhost:8089/api/v1/links/1",
 							"host": [
 								"localhost"
 							],
-							"port": "8000",
+							"port": "8089",
 							"path": [
 								"api",
 								"v1",
 								"links",
-								"8"
+								"1"
 							]
 						}
 					},
@@ -272,13 +272,13 @@
 							}
 						],
 						"url": {
-							"raw": "localhost:8000/3YcagU",
+							"raw": "localhost:8089/5Fz3F0",
 							"host": [
 								"localhost"
 							],
-							"port": "8000",
+							"port": "8089",
 							"path": [
-								"3YcagU"
+								"5Fz3F0"
 							]
 						}
 					},
