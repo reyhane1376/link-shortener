@@ -14,15 +14,15 @@ This project is a URL shortening service implemented using **pure PHP**. The goa
 - **Link Management**: Create, edit, delete, and view shortened links.
 - **URL Shortening**: Generate short links using a hash_map.
 - **Caching**: Redis is used to enhance performance.
-- **Database**: PostgreSQL for data storage.
+- **Database**: Mysql for data storage.
 
 ## Technologies
 - **Programming Language**: Pure PHP (no framework)
-- **Database**: PostgreSQL
+- **Database**: Mysql
 - **Caching**: Redis
 - **Dependency Management**: Composer with Autoloader
-- **Short Link Generation**: Hash_map applied on the `short_code` column
-- **Database Optimization**: Hash index (`hash_index USING HASH`) on the `short_code` column
+- **Short Link Generation**: Hash_map applied on the `short_code` column *(Not implemented yet, recommended for high link volumes)*
+- **Database Optimization**: Hash index (`hash_index USING HASH`) on the `short_code` column *(Not implemented yet, recommended for high link volumes)*
 
 ### Setup Steps
 1. **Clone the Repository**:
@@ -117,11 +117,11 @@ link-shortener/
 ├── config            # Environment configuration
 ├── routes            # routes
 ├── shemas            # shemas
-├── public/           # Entry point (index.php)
+├── index.php        # index.php
 ├── src/              # Core project code
 ├── vendor/           # Composer dependencies
-├── Dockerfile        #
-├── docker-compose    # 
+├── Dockerfile        # Dockerfile
+├── docker-compose    # docker-compose
 └── README.md         # Project documentation
 ```
 
