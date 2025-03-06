@@ -1,6 +1,6 @@
 -- Create database
-CREATE DATABASE IF NOT EXISTS link_shortener CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE link_shortener;
+CREATE DATABASE IF NOT EXISTS url_shortener CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE url_shortener;
 
 -- Create users table
 CREATE TABLE IF NOT EXISTS users (
