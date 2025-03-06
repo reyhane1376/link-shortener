@@ -27,19 +27,17 @@ This project is a URL shortening service implemented using **pure PHP**. The goa
 ### Setup Steps
 1. **Clone the Repository**:
    ```bash
-   git clone <repository-url>
+   git clone https://github.com/reyhane1376/link-shortener.git
    cd link-shortener
    ```
 
 2. **Install Dependencies**:
    ```bash
-   docker-compose up
+   sudo docker-compose up --build
    ```
 
 3. **Environment Configuration**:
    You can modify the configuration by editing the config/config.php files in the project.
-
-4. **Database Setup**:
 
 
 ## Short Code Length Formula
