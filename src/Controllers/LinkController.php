@@ -193,7 +193,7 @@ class LinkController {
             $this->cache->delete($cacheKeyLinks);
 
             $response = [
-                'message' => 'لینک با موفقیت حذف شد.',
+                'message' => 'Link successfully deleted.',
             ];
             
             http_response_code(201);
