@@ -100,6 +100,11 @@ class User {
     }
     
     private function getSecretKey() {
-        return '/Ka4Wcvynx64mIqt8vehHWFg8W3ewBLDl86EVu3VoVc=';
+        // Load from environment variable or secure configuration
+        $secretKey = JWT_SECRET_KEY;
+        if (empty($secretKey)) {
+            throw new AppException("JWT secret key not configured", 500);
+        }
+        return $secretKey;
     }
 }
