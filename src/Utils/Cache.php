@@ -7,7 +7,11 @@ class Cache {
     private $redis;
     
     public function __construct() {
-        $this->redis = new Client();
+        $this->redis = new Client([
+            'scheme' => SHEMA_DB_REDIS_PORT,
+            'host'   => DB_REDIS,
+            'port'   => DB_REDIS_PORT,
+        ]);
     }
     
     private function getCacheKey($key) {
