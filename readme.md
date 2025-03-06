@@ -5,7 +5,7 @@
 A Postman collection is available for testing the system's APIs.  
 You can download it using the link below:
 
-[Download Postman Collection](https://raw.githubusercontent.com/reyhane1376/smart-library/refs/heads/main/postman/smart_book.postman_collection.json?token=GHSAT0AAAAAAC4LE5ZEKDFEE3P6GDWKFEIGZ6IJUCA)
+[Download Postman Collection](https://github.com/reyhane1376/link-shortener/blob/main/link%20shortener.postman_collection.json)
 
 This project is a URL shortening service implemented using **pure PHP**. The goal is to provide a simple and efficient system for shortening URLs and managing them via an API.
 
