@@ -9,6 +9,8 @@ use Lcobucci\JWT\Signer\Key\InMemory;
 
 class User {
     private $db;
+    private $maxLoginAttempts = 5;
+    private $lockoutTime = 1800; // 30 minutes in seconds
     
     public function __construct() {
         $this->db = new Database();
@@ -46,11 +48,34 @@ class User {
     
     public function authenticate($username, $password) {
         // Find user by username
-        $user = $this->db->select("SELECT id, username, password, email FROM users WHERE username = ?", [$username])->fetch();
+        $user = $this->db->select("SELECT id, username, password, email, login_attempts, last_attempt_time FROM users WHERE username = ?", [$username])->fetch();
         
+        // Check if account is temporarily locked due to too many failed attempts
+        if ($user && $user['login_attempts'] >= $this->maxLoginAttempts) {
+            // Check if lockout period has passed
+            $lastAttemptTime = $user['last_attempt_time'] ? strtotime($user['last_attempt_time']) : 0;
+            $timeSinceLastAttempt = time() - $lastAttemptTime;
+            
+            if ($timeSinceLastAttempt < $this->lockoutTime) {
+                $minutesLeft = ceil(($this->lockoutTime - $timeSinceLastAttempt) / 60);
+                throw new AppException("Account temporarily locked. Try again in {$minutesLeft} minutes.", 429);
+            }
+            
+            // If lockout period has passed, reset the attempts counter
+            $this->resetLoginAttempts($user['id']);
+        }
+        
+        // Validate credentials
         if (!$user || !password_verify($password, $user['password'])) {
+            // Record failed attempt if user exists
+            if ($user) {
+                $this->incrementLoginAttempts($user['id']);
+            }
             throw new AppException("Invalid credentials", 401);
         }
+        
+        // Reset login attempts on successful login
+        $this->resetLoginAttempts($user['id']);
         
         // Generate JWT token using lcobucci/jwt
         $config = Configuration::forSymmetricSigner(
@@ -75,6 +100,20 @@ class User {
             ],
             'token' => $token->toString()
         ];
+    }
+    
+    private function incrementLoginAttempts($userId) {
+        $this->db->execute(
+            "UPDATE users SET login_attempts = login_attempts + 1, last_attempt_time = NOW() WHERE id = ?", 
+            [$userId]
+        );
+    }
+    
+    private function resetLoginAttempts($userId) {
+        $this->db->execute(
+            "UPDATE users SET login_attempts = 0, last_attempt_time = NULL WHERE id = ?", 
+            [$userId]
+        );
     }
     
     public function verifyToken($tokenString) {
