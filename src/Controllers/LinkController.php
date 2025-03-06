@@ -96,7 +96,21 @@ class LinkController {
             }
             
             $originalUrl = $data['original_url'];
-            $customDomain = $data['custom_domain'] ?? null;
+
+            // Validate URL more strictly
+            if (!filter_var($originalUrl, FILTER_VALIDATE_URL) || 
+                !preg_match('/^https?:\/\//', $originalUrl)) {
+                    throw new AppException("Invalid URL format. URL must start with http:// or https://");
+            }
+
+            // Validate custom domain if provided
+            $customDomain = null;
+            if (isset($data['custom_domain']) && !empty($data['custom_domain'])) {
+                if (!preg_match('/^[a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9]\.[a-zA-Z]{2,}$/', $data['custom_domain'])) {
+                    throw new AppException("Invalid custom domain format");
+                }
+                $customDomain = htmlspecialchars($data['custom_domain'], ENT_QUOTES, 'UTF-8');
+            }
             
             // Create the link
             $link = $this->linkModel->create($userId, $originalUrl, $customDomain);
