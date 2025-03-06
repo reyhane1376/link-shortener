@@ -3,7 +3,7 @@
     "description": "URL shortener application",
     "autoload": {
         "psr-4": {
-            "Reyhane\\LinkShortener\\": "src/"
+            "App\\": "src/"
         }
     },
     "authors": [
@@ -13,6 +13,7 @@
         }
     ],
     "require": {
-        "php": ">=7.0"
+        "php": ">=7.4",
+        "lcobucci/jwt": "^5.5"
     }
 }
