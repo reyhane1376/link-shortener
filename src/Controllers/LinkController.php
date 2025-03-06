@@ -213,15 +213,25 @@ class LinkController {
                     
             if ($link === null) {
                 $link = $this->linkModel->getByCode($shortCode);
-                
                 $this->cache->set($cacheKey, $link, 3600);
+            }
+
+            $url = $link['original_url'];
+            if (!filter_var($url, FILTER_VALIDATE_URL) || 
+                !preg_match('/^https?:\/\//', $url)) {
+                throw new AppException("Invalid redirect URL", 400);
             }
             
             // Increment click count (but don't wait for it)
             $this->linkModel->incrementClicks($link['id']);
+
+
+            // Add security headers
+            header("X-Frame-Options: DENY");
+            header("Content-Security-Policy: frame-ancestors 'none'");
             
             // Redirect to the original URL
-            header("Location: {$link['original_url']}");
+            header("Location: " . $url);
             exit;
             
         } catch (AppException $e) {
