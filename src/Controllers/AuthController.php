@@ -41,4 +41,23 @@ class AuthController {
         // Return response
         echo json_encode($result);
     }
+    
+    public function logout() {
+        // Get Authorization header
+        $headers = getallheaders();
+        $authHeader = isset($headers['Authorization']) ? $headers['Authorization'] : '';
+        
+        if (empty($authHeader) || !preg_match('/Bearer\s(\S+)/', $authHeader, $matches)) {
+            throw new AppException("No token provided", 401);
+        }
+        
+        $token = $matches[1];
+        
+        // Invalidate the token
+        $this->userModel->invalidateToken($token);
+        
+        // Return success response
+        http_response_code(200);
+        echo json_encode(['message' => 'Successfully logged out']);
+    }
 }

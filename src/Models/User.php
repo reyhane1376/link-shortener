@@ -103,13 +103,17 @@ class User {
             ->withClaim('username', $user['username'])
             ->getToken($config->signer(), $config->signingKey());
         
+        // Store token in invalidated_tokens table with status 'active'
+        $tokenString = $token->toString();
+        $this->storeToken($user['id'], $tokenString, $now->modify('+24 hours')->getTimestamp());
+        
         return [
             'user' => [
                 'id' => $user['id'],
                 'username' => $user['username'],
                 'email' => $user['email']
             ],
-            'token' => $token->toString()
+            'token' => $tokenString
         ];
     }
     
@@ -127,6 +131,39 @@ class User {
         );
     }
     
+    private function storeToken($userId, $token, $expiresAt) {
+        
+        $this->db->insert(
+            'token_blacklist', 
+            ['user_id', 'token', 'expires_at'], 
+            [$userId, $token, date('Y-m-d H:i:s', $expiresAt)]
+        );
+    }
+    
+    public function invalidateToken($tokenString) {
+        try {
+            // First verify the token is valid
+            $tokenData = $this->verifyToken($tokenString);
+            
+            // Then invalidate it in the database
+            $updated = $this->db->execute(
+                "UPDATE token_blacklist SET invalidated = TRUE, invalidated_at = NOW() WHERE token = ?", 
+                [$tokenString]
+            );
+            
+            if (!$updated) {
+                throw new AppException("Token not found or already invalidated", 400);
+            }
+            
+            return true;
+        } catch (AppException $e) {
+            // Re-throw application exceptions
+            throw $e;
+        } catch (\Exception $e) {
+            throw new AppException("Error invalidating token: " . $e->getMessage(), 500);
+        }
+    }
+    
     public function verifyToken($tokenString) {
         try {
             $config = Configuration::forSymmetricSigner(
@@ -138,6 +175,16 @@ class User {
             
             if($token->isExpired(new \DateTimeImmutable())) {
                 throw new AppException("Token expired", 401);
+            }
+            
+            // Check if token has been invalidated (logged out)
+            $tokenRecord = $this->db->select(
+                "SELECT invalidated FROM token_blacklist WHERE token = ?", 
+                [$tokenString]
+            )->fetch();
+            
+            if ($tokenRecord && $tokenRecord['invalidated']) {
+                throw new AppException("Token has been invalidated", 401);
             }
             
             return [

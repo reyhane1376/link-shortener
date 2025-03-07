@@ -27,6 +27,16 @@ CREATE TABLE IF NOT EXISTS links (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
+CREATE TABLE token_blacklist (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    token VARCHAR(255) NOT NULL,
+    expires_at DATETIME NOT NULL,
+    invalidated BOOLEAN DEFAULT FALSE,
+    invalidated_at DATETIME DEFAULT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Add indexes
 CREATE INDEX idx_short_code ON links(short_code);
 CREATE INDEX idx_user_links ON links(user_id);
