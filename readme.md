@@ -77,6 +77,13 @@ The API endpoints are documented in the provided Postman Collection. Below is a 
   ```json
   {"username": "testuser", "password": "Abcd@6378", "email": "test@example.com"}
   ```
+  
+#### Logout:
+- `GET /api/v1/logout`
+- Authorization: Bearer `<JWT_TOKEN>`
+
+
+
 
 ### Link Management
 #### Create Link:
