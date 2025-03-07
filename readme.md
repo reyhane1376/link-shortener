@@ -7,6 +7,12 @@ You can download it using the link below:
 
 [Download Postman Collection](https://github.com/reyhane1376/link-shortener/blob/main/link%20shortener.postman_collection.json)
 
+## Run the Tests
+
+```
+./vendor/bin/phpunit tests/
+```
+
 This project is a URL shortening service implemented using **pure PHP**. The goal is to provide a simple and efficient system for shortening URLs and managing them via an API.
 
 ## Features

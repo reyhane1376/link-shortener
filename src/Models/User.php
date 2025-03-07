@@ -12,8 +12,8 @@ class User {
     private $maxLoginAttempts = 5;
     private $lockoutTime = 1800; // 30 minutes in seconds
     
-    public function __construct() {
-        $this->db = new Database();
+    public function __construct($db = null) {
+        $this->db = $db ?? new Database();
     }
     
     public function create($username, $password, $email) {
@@ -132,7 +132,6 @@ class User {
     }
     
     private function storeToken($userId, $token, $expiresAt) {
-        
         $this->db->insert(
             'token_blacklist', 
             ['user_id', 'token', 'expires_at'], 
@@ -173,7 +172,7 @@ class User {
             
             $token = $config->parser()->parse($tokenString);
             
-            if($token->isExpired(new \DateTimeImmutable())) {
+            if ($token->isExpired(new \DateTimeImmutable())) {
                 throw new AppException("Token expired", 401);
             }
             

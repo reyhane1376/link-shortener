@@ -72,13 +72,17 @@ function uri($reservedUrl, $class, $method, $methodField = "GET")
 
 function protocol()
 {
-    return stripos($_SERVER['SERVER_PROTOCOL'], 'https') == true ? 'https://' : 'http://';
+    if (PHP_SAPI === 'cli' || !isset($_SERVER['SERVER_PROTOCOL'])) {
+        return 'http://'; // Default to HTTP in CLI/tests
+    }
+    return stripos($_SERVER['SERVER_PROTOCOL'], 'https') === 0 ? 'https://' : 'http://';
 }
-
-// echo protocol();
 
 function currentDomain()
 {
+    if (PHP_SAPI === 'cli' || !isset($_SERVER['HTTP_HOST'])) {
+        return 'http://localhost'; // Default domain for CLI/tests
+    }
     return protocol() . $_SERVER['HTTP_HOST'];
 }
 // echo trim(CURRENT_DOMAIN, '/');
