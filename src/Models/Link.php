@@ -13,51 +13,43 @@ class Link {
         $this->db = new Database();
     }
     
-    public function generateUniqueCode($originalUrl) {
+    public function create($userId, $originalUrl, $customDomain = null) {
+
+        // Validate URL
+        if (!filter_var($originalUrl, FILTER_VALIDATE_URL)) {
+            throw new AppException("Invalid URL format");
+        }
+
         $conn = $this->db->getConnection();
         
         try {
             $conn->beginTransaction();
+        
             
-            // Get existing codes to check against
             $existingCodes = $this->db->select("SELECT short_code FROM links FOR UPDATE")->fetchAll(\PDO::FETCH_COLUMN);
             
-            // Generate a unique code using the HashTable algorithm
-            $code = HashTable::generateUniqueCode($originalUrl, $existingCodes);
+            $shortCode = HashTable::generateUniqueCode($originalUrl, $existingCodes);
             
-            // Verify one more time that the code is unique
-            $exists = $this->db->select("SELECT id FROM links WHERE short_code = ? FOR UPDATE", [$code])->fetch();
+            $exists = $this->db->select("SELECT id FROM links WHERE short_code = ? FOR UPDATE", [$shortCode])->fetch();
             
-            if (!$exists) {
-                $conn->commit();
-                return $code;
+            if ($exists) {
+                $conn->rollBack();
+                throw new AppException("Failed to generate a unique code");
             }
             
-            $conn->rollBack();
-            throw new AppException("Failed to generate a unique code");
+            $linkId = $this->db->insert('links', 
+                ['user_id', 'original_url', 'short_code', 'custom_domain'], 
+                [$userId, $originalUrl, $shortCode, $customDomain]
+            );
+            
+            $conn->commit();
+            
+            return $this->getById($linkId);
             
         } catch (PDOException $e) {
             $conn->rollBack();
             throw new AppException("Database error: " . $e->getMessage());
         }
-    }
-    
-    public function create($userId, $originalUrl, $customDomain = null) {
-        // Validate URL
-        if (!filter_var($originalUrl, FILTER_VALIDATE_URL)) {
-            throw new AppException("Invalid URL format");
-        }
-        
-        // Generate a unique code using the hashtable algorithm
-        $shortCode = $this->generateUniqueCode($originalUrl);
-        
-        // Create the link
-        $linkId = $this->db->insert('links', 
-            ['user_id', 'original_url', 'short_code', 'custom_domain'], 
-            [$userId, $originalUrl, $shortCode, $customDomain]
-        );
-        
-        return $this->getById($linkId);
     }
     
     public function getById($id, $userId = null) {
