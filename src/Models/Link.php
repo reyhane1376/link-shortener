@@ -7,183 +7,212 @@ use App\Utils\HashFunc;
 use App\Utils\Cache;
 use PDOException;
 
-class Link {
-    private $db;
-    private $cache;
-    
-    public function __construct() {
+class Link
+{
+    private Database $db;
+    private Cache $cache;
+    private const DEFAULT_CODE_LENGTH = 6;
+    private const MAX_CODE_LENGTH = 10;
+    private const MAX_ATTEMPTS = 5;
+    private const CACHE_TTL = 86400; // 24 hours in seconds
+
+    public function __construct()
+    {
         $this->db = new Database();
         $this->cache = new Cache();
     }
-    
-    public function create($userId, $originalUrl, $customDomain = null) {
+
+    public function create(int $userId, string $originalUrl, ?string $customDomain = null): array
+    {
         $conn = $this->db->getConnection();
-        
+
         try {
             $conn->beginTransaction();
 
-            $length = 6;
+            $length = self::DEFAULT_CODE_LENGTH;
             $shortCode = $this->createShortCode($originalUrl, $length);
 
             if (!$shortCode) {
-                // If we failed to create a short code with the default length,
-                // try with an increased length
-                $maxLength = 10;
-                
-                while (!$shortCode && $length < $maxLength) {
+                while (!$shortCode && $length < self::MAX_CODE_LENGTH) {
                     $length++;
                     $shortCode = $this->createShortCode($originalUrl, $length);
                 }
-                
+
                 if (!$shortCode) {
                     $conn->rollBack();
                     throw new AppException("Failed to generate a unique code after multiple attempts");
                 }
             }
-            
-            $linkId = $this->db->insert('links', 
-                ['user_id', 'original_url', 'short_code', 'custom_domain'], 
-                [$userId, $originalUrl, $shortCode, $customDomain]
-            );
-            
+
+            $sql = "INSERT INTO links (user_id, original_url, short_code, custom_domain, created_at) 
+                    VALUES (:user_id, :original_url, :short_code, :custom_domain, NOW()) 
+                    RETURNING id";
+
+            $stmt = $conn->prepare($sql);
+            $stmt->execute([
+                ':user_id' => $userId,
+                ':original_url' => $originalUrl,
+                ':short_code' => $shortCode,
+                ':custom_domain' => $customDomain
+            ]);
+            $result = $stmt->fetch(\PDO::FETCH_ASSOC);
+            $linkId = $result['id'];
+
             $conn->commit();
-            
-            // Store the short code mapping in cache
-            $cacheKeyShortCode = "short_code_{$shortCode}";
+
+            $cacheKey = "short_code_{$shortCode}";
             $link = $this->getById($linkId);
-            $this->cache->set($cacheKeyShortCode, $link, 86400);
-            
+            $this->cache->set($cacheKey, $link, self::CACHE_TTL);
+
             return $link;
-            
+
         } catch (PDOException $e) {
             $conn->rollBack();
             throw new AppException("Database error: " . $e->getMessage());
         }
     }
-    
-    public function getById($id, $userId = null) {
-        $params = [$id];
-        $sql = "SELECT * FROM links WHERE id = ?";
-        
+
+    public function getById(int $id, ?int $userId = null): array
+    {
+        $sql = "SELECT * FROM links WHERE id = :id";
+        $params = [':id' => $id];
+
         if ($userId !== null) {
-            $sql .= " AND user_id = ?";
-            $params[] = $userId;
+            $sql .= " AND user_id = :user_id";
+            $params[':user_id'] = $userId;
         }
-        
-        $link = $this->db->select($sql, $params)->fetch();
-        
+
+        $stmt = $this->db->getConnection()->prepare($sql);
+        $stmt->execute($params);
+        $link = $stmt->fetch(\PDO::FETCH_ASSOC);
+
         if (!$link) {
             throw new AppException("Link not found", 404);
         }
-        
+
         return $link;
     }
-    
-    public function getByCode($shortCode) {
-        $link = $this->db->select("SELECT * FROM links WHERE short_code = ?", [$shortCode])->fetch();
-        
+
+    public function getByCode(string $shortCode): array
+    {
+        $sql = "SELECT * FROM links WHERE short_code = :short_code";
+        $stmt = $this->db->getConnection()->prepare($sql);
+        $stmt->execute([':short_code' => $shortCode]);
+        $link = $stmt->fetch(\PDO::FETCH_ASSOC);
+
         if (!$link) {
             throw new AppException("Link not found", 404);
         }
-        
+
         return $link;
     }
-    
-    public function getAll($userId) {
-        return $this->db->select("SELECT * FROM links WHERE user_id = ? ORDER BY created_at DESC", [$userId])->fetchAll();
+
+    public function getAll(int $userId): array
+    {
+        $sql = "SELECT * FROM links WHERE user_id = :user_id ORDER BY created_at DESC";
+        $stmt = $this->db->getConnection()->prepare($sql);
+        $stmt->execute([':user_id' => $userId]);
+        return $stmt->fetchAll(\PDO::FETCH_ASSOC);
     }
-    
-    public function update($id, $userId, $data) {
-        // Verify the link exists and belongs to the user
+
+    public function update(int $id, int $userId, array $data): array
+    {
         $link = $this->getById($id, $userId);
         
-        // Prepare update fields
         $updateFields = [];
         $params = [];
-        
+
         if (isset($data['original_url'])) {
             if (!filter_var($data['original_url'], FILTER_VALIDATE_URL)) {
                 throw new AppException("Invalid URL format");
             }
-            $updateFields[] = "original_url = ?";
-            $params[] = $data['original_url'];
+            $updateFields[] = "original_url = :original_url";
+            $params[':original_url'] = $data['original_url'];
         }
-        
+
         if (isset($data['custom_domain'])) {
-            $updateFields[] = "custom_domain = ?";
-            $params[] = $data['custom_domain'];
+            $updateFields[] = "custom_domain = :custom_domain";
+            $params[':custom_domain'] = $data['custom_domain'];
         }
-        
+
         if (empty($updateFields)) {
-            return $link; // Nothing to update
+            return $link;
         }
-        
-        // Add the ID and user_id to params
-        $params[] = $id;
-        $params[] = $userId;
-        
-        // Execute the update
-        $sql = "UPDATE links SET " . implode(", ", $updateFields) . " WHERE id = ? AND user_id = ?";
-        $this->db->execute($sql, $params);
-        
-        // Return the updated link
-        return $this->getById($id, $userId);
-    }
-    
-    public function delete($id, $userId) {
-        // Get the link first to get the short code
-        $link = $this->getById($id, $userId);
-        $shortCode = $link['short_code'];
-        
-        // Delete the link
-        $this->db->execute("DELETE FROM links WHERE id = ? AND user_id = ?", [$id, $userId]);
-        
-        // Delete from cache
-        $cacheKeyShortCode = "short_code_{$shortCode}";
-        $this->cache->delete($cacheKeyShortCode);
-        
-        // Keep the short_code_exists entry to prevent reuse for some time
-        
-        return true;
-    }
-    
-    public function incrementClicks($id) {
-        $this->db->execute("UPDATE links SET clicks = clicks + 1 WHERE id = ?", [$id]);
+
+        $updateFields[] = "updated_at = NOW()";
+        $params[':id'] = $id;
+        $params[':user_id'] = $userId;
+
+        $sql = "UPDATE links SET " . implode(", ", $updateFields) . 
+               " WHERE id = :id AND user_id = :user_id RETURNING *";
+
+        $stmt = $this->db->getConnection()->prepare($sql);
+        $stmt->execute($params);
+        $updatedLink = $stmt->fetch(\PDO::FETCH_ASSOC);
+
+        if (!$updatedLink) {
+            throw new AppException("Failed to update link", 500);
+        }
+
+        return $updatedLink;
     }
 
-    private function createShortCode($originalUrl, $length = 6)
+    public function delete(int $id, int $userId): bool
     {
-        $maxAttempts = 5;
+        $link = $this->getById($id, $userId);
+        $shortCode = $link['short_code'];
+
+        $sql = "DELETE FROM links WHERE id = :id AND user_id = :user_id";
+        $stmt = $this->db->getConnection()->prepare($sql);
+        $stmt->execute([
+            ':id' => $id,
+            ':user_id' => $userId
+        ]);
+
+        if ($stmt->rowCount() === 0) {
+            throw new AppException("Failed to delete link", 500);
+        }
+
+        $cacheKey = "short_code_{$shortCode}";
+        $this->cache->delete($cacheKey);
+
+        return true;
+    }
+
+    public function incrementClicks(int $id): void
+    {
+        $sql = "UPDATE links SET clicks = clicks + 1 WHERE id = :id";
+        $stmt = $this->db->getConnection()->prepare($sql);
+        $stmt->execute([':id' => $id]);
+    }
+
+    private function createShortCode(string $originalUrl, int $length): ?string
+    {
         $attempts = 0;
         $shortCode = null;
-        
-        while ($attempts < $maxAttempts) {
-            // Generate a potential short code
+
+        while ($attempts < self::MAX_ATTEMPTS) {
             $potentialCode = HashFunc::generateShortCode($originalUrl . $attempts, $length);
             $attempts++;
-            
-            // Check if code exists in Redis first
+
             $cacheKey = "short_code_{$potentialCode}";
             $existsInCache = $this->cache->get($cacheKey);
-            
+
             if ($existsInCache === null) {
-                // Not in cache, check database
-                $exists = $this->db->select("SELECT id FROM links WHERE short_code = ?", [$potentialCode])->fetch();
-                
+                $sql = "SELECT id FROM links WHERE short_code = :short_code";
+                $stmt = $this->db->getConnection()->prepare($sql);
+                $stmt->execute([':short_code' => $potentialCode]);
+                $exists = $stmt->fetch(\PDO::FETCH_ASSOC);
+
                 if (!$exists) {
-                    // Code is unique, we can use it
                     $shortCode = $potentialCode;
-                    // Add to cache to mark it as used
-                    $this->cache->set($cacheKey, true, 86400);
+                    $this->cache->set($cacheKey, true, self::CACHE_TTL);
                     break;
-                } else {
-                    // Mark as existing in cache for future checks
-                    $this->cache->set($cacheKey, true, 86400);
                 }
+                $this->cache->set($cacheKey, true, self::CACHE_TTL);
             }
-            // If exists in cache, just continue to next attempt
         }
-        
+
         return $shortCode;
     }
 }

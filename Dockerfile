@@ -4,11 +4,12 @@ FROM docker.arvancloud.ir/php:8.2-apache
 RUN apt-get update && apt-get install -y \
     libzip-dev \
     libgmp-dev \
+    libpq-dev \
     zip \
     unzip \
     git \
     && docker-php-ext-install gmp \
-    && docker-php-ext-install pdo_mysql zip
+    && docker-php-ext-install pdo_pgsql zip
 
 # Enable Apache mod_rewrite
 RUN a2enmod rewrite

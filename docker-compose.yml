@@ -11,26 +11,25 @@ services:
       - db
       - redis
     environment:
-      DB_CONNECTION: mysql
+      DB_CONNECTION: pgsql
       DB_HOST: db
       DB_DATABASE: url_shortener
       DB_USERNAME: urluser
       DB_PASSWORD: urlpassword
-      DB_PORT: 3306
+      DB_PORT: 5432
       REDIS_HOST: redis
       REDIS_PORT: 6379
 
   db:
-    image: docker.arvancloud.ir/mysql:8
+    image: docker.arvancloud.ir/postgres:14
     ports:
-      - "3309:3306"
+      - "5432:5432"
     environment:
-      MYSQL_DATABASE: url_shortener
-      MYSQL_USER: urluser
-      MYSQL_PASSWORD: urlpassword
-      MYSQL_ROOT_PASSWORD: rootpassword
+      POSTGRES_DB: url_shortener
+      POSTGRES_USER: urluser
+      POSTGRES_PASSWORD: urlpassword
     volumes:
-      - db_data:/var/lib/mysql
+      - db_data:/var/lib/postgresql/data
       - ./schemas/db-schema.sql:/docker-entrypoint-initdb.d/db-schema.sql
 
   redis:

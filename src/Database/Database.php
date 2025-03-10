@@ -6,24 +6,31 @@ use PDOException;
 
 class Database
 {
-
     private $connection;
-    private $options = [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC, PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES utf8'];
+    private $options = [
+        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC
+    ];
     private $dbHost = DB_HOST;
     private $dbPassword = DB_PASSWORD;
     private $dbUsername = DB_USERNAME;
     private $dbName = DB_NAME;
+    private $dbPort = DB_PORT;
 
     public function __construct()
     {
         try {
-            $this->connection = new PDO("mysql:host=" . $this->dbHost . ";dbname=" . $this->dbName, $this->dbUsername, $this->dbPassword, $this->options);
+            $this->connection = new PDO(
+                "pgsql:host=" . $this->dbHost . ";port=" . $this->dbPort . ";dbname=" . $this->dbName, 
+                $this->dbUsername, 
+                $this->dbPassword, 
+                $this->options
+            );
         } catch (PDOException $e) {
             echo 'Error : ' . $e->getMessage();
             exit;
         }
     }
-
 
     public function getConnection(): PDO
     {
@@ -54,10 +61,15 @@ class Database
     public function insert($tableName, $fields, $values)
     {
         try {
-            $stmt = $this->connection->prepare("INSERT INTO " . $tableName . "(" . implode(', ', $fields) . " , created_at) VALUES ( :" . implode(', :', $fields) . " , now() );");
-            $stmt->execute(array_combine($fields, $values));
-            $id = $this->connection->lastInsertId();
-            return $id;
+            // PostgreSQL uses RETURNING instead of lastInsertId()
+            $stmt = $this->connection->prepare(
+                "INSERT INTO " . $tableName . 
+                "(" . implode(', ', $fields) . ", created_at) VALUES (" . 
+                implode(', ', array_fill(0, count($fields), '?')) . ", CURRENT_TIMESTAMP) RETURNING id"
+            );
+            
+            $stmt->execute($values);
+            return $stmt->fetchColumn(); // Get the returned ID
         } catch (PDOException $e) {
             echo 'Error : ' . $e->getMessage();
             exit;
@@ -68,18 +80,23 @@ class Database
     public function update($tableName, $id, $fields, $values)
     {
         $sql = "UPDATE " . $tableName . " SET ";
+        $filteredValues = [];
+        
         foreach (array_combine($fields, $values) as $field => $value) {
-            if ($value) {
-                $sql .= " `" . $field . "` = ?, ";
+            if ($value !== null) {
+                $sql .= " " . $field . " = ?, ";
+                $filteredValues[] = $value;
             } else {
-                $sql .= " `" . $field . "` = NULL, ";
+                $sql .= " " . $field . " = NULL, ";
             }
         }
-        $sql .= ' updated_at = now()';
+        
+        $sql .= ' updated_at = CURRENT_TIMESTAMP';
         $sql .= " WHERE id = ?";
+        
         try {
             $stmt = $this->connection->prepare($sql);
-            $stmt->execute(array_merge(array_filter(array_values($values)), [$id]));
+            $stmt->execute(array_merge($filteredValues, [$id]));
             return true;
         } catch (PDOException $e) {
             echo 'Error : ' . $e->getMessage();
@@ -91,7 +108,7 @@ class Database
     public function delete($tableName, $id)
     {
         try {
-            $sql = "DELETE FROM " . $tableName . " WHERE id = ? ;";
+            $sql = "DELETE FROM " . $tableName . " WHERE id = ?";
             $stmt = $this->connection->prepare($sql);
             $stmt->execute([$id]);
             return true;
@@ -111,7 +128,6 @@ class Database
             exit;
         }
     }
-
 
     public function execute(string $sql, array $values = []): bool
     {
