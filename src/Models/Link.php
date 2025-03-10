@@ -3,7 +3,7 @@ namespace App\Models;
 
 use App\Database\Database;
 use App\Exceptions\AppException;
-use App\Utils\HashTable;
+use App\Utils\HashFunc;
 use PDOException;
 
 class Link {
@@ -15,22 +15,17 @@ class Link {
     
     public function create($userId, $originalUrl, $customDomain = null) {
 
-        // Validate URL
-        if (!filter_var($originalUrl, FILTER_VALIDATE_URL)) {
-            throw new AppException("Invalid URL format");
-        }
-
         $conn = $this->db->getConnection();
         
         try {
             $conn->beginTransaction();
         
             
-            $existingCodes = $this->db->select("SELECT short_code FROM links FOR UPDATE")->fetchAll(\PDO::FETCH_COLUMN);
+            $existingCodes = $this->db->select("SELECT short_code FROM links")->fetchAll(\PDO::FETCH_COLUMN);
             
-            $shortCode = HashTable::generateUniqueCode($originalUrl, $existingCodes);
+            $shortCode = HashFunc::generateUniqueCode($originalUrl, $existingCodes);
             
-            $exists = $this->db->select("SELECT id FROM links WHERE short_code = ? FOR UPDATE", [$shortCode])->fetch();
+            $exists = $this->db->select("SELECT id FROM links WHERE short_code = ?", [$shortCode])->fetch();
             
             if ($exists) {
                 $conn->rollBack();

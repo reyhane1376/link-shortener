@@ -1,7 +1,7 @@
 <?php
 namespace App\Utils;
 
-class HashTable {
+class HashFunc {
     /**
      * Generate a short code using a base62 encoding of a hash value
      * 
