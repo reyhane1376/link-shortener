@@ -207,13 +207,13 @@ class LinkController {
     
     public function redirect($shortCode) {
         try {
-            $cacheKey = "short_code_{$shortCode}";
-            $link = $this->cache->get($cacheKey);
+            $cacheKeyShortCode = "short_code_{$shortCode}";
+            $link = $this->cache->get($cacheKeyShortCode);
 
                     
             if ($link === null) {
                 $link = $this->linkModel->getByCode($shortCode);
-                $this->cache->set($cacheKey, $link, 3600);
+                $this->cache->set($cacheKeyShortCode, $link, 3600);
             }
 
             $url = $link['original_url'];
@@ -224,6 +224,13 @@ class LinkController {
             
             // Increment click count (but don't wait for it)
             $this->linkModel->incrementClicks($link['id']);
+
+            $cacheKey = "link_{$link['user_id']}_{$link['id']}";
+            $this->cache->set($cacheKey, $link);
+
+            $cacheKeyLinks = "links_{$link['user_id']}";
+            $this->cache->delete($cacheKeyLinks);
+            $this->cache->delete($cacheKeyShortCode);
 
 
             // Add security headers

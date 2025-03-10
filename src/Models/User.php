@@ -17,25 +17,6 @@ class User {
     }
     
     public function create($username, $password, $email) {
-        // Validate input
-        if (empty($username) || empty($password) || empty($email)) {
-            throw new AppException("All fields are required");
-        }
-        
-        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            throw new AppException("Invalid email format");
-        }
-
-        // Enforce password complexity
-        if (strlen($password) < 8) {
-            throw new AppException("Password must be at least 8 characters long");
-        }
-        
-        if (!preg_match('/[A-Z]/', $password) || 
-            !preg_match('/[a-z]/', $password) || 
-            !preg_match('/[0-9]/', $password)) {
-            throw new AppException("Password must include uppercase, lowercase, and numbers");
-        }
         
         // Check if username or email already exists
         $existingUser = $this->db->select("SELECT id FROM users WHERE username = ? OR email = ?", [$username, $email])->fetch();

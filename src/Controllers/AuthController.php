@@ -18,6 +18,21 @@ class AuthController {
         if (!isset($data['username']) || !isset($data['password']) || !isset($data['email'])) {
             throw new AppException("Username, password and email are required");
         }
+                
+        if (!filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
+            throw new AppException("Invalid email format");
+        }
+
+        // Enforce password complexity
+        if (strlen($data['password']) < 8) {
+            throw new AppException("Password must be at least 8 characters long");
+        }
+        
+        if (!preg_match('/[A-Z]/', $data['password']) || 
+            !preg_match('/[a-z]/', $data['password']) || 
+            !preg_match('/[0-9]/', $data['password'])) {
+            throw new AppException("Password must include uppercase, lowercase, and numbers");
+        }
         
         // Create user
         $user = $this->userModel->create($data['username'], $data['password'], $data['email']);
