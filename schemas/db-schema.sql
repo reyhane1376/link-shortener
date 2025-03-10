@@ -38,7 +38,7 @@ CREATE TABLE token_blacklist (
 );
 
 -- Add indexes
-CREATE INDEX idx_short_code ON links(short_code);
+CREATE INDEX idx_short_code ON links USING HASH (short_code);
 CREATE INDEX idx_user_links ON links(user_id);
 
 -- Create function for updated_at trigger
