@@ -25,29 +25,26 @@ class Link
     public function create(int $userId, string $originalUrl, ?string $customDomain = null): array
     {
         $conn = $this->db->getConnection();
-
-        try {
-            $conn->beginTransaction();
-
-            $length = self::DEFAULT_CODE_LENGTH;
-            $shortCode = $this->createShortCode($originalUrl, $length);
-
-            if (!$shortCode) {
-                while (!$shortCode && $length < self::MAX_CODE_LENGTH) {
-                    $length++;
-                    $shortCode = $this->createShortCode($originalUrl, $length);
-                }
-
-                if (!$shortCode) {
-                    $conn->rollBack();
-                    throw new AppException("Failed to generate a unique code after multiple attempts");
-                }
+    
+        $length = self::DEFAULT_CODE_LENGTH;
+        $shortCode = $this->createShortCode($originalUrl, $length);
+    
+        if (!$shortCode) {
+            while (!$shortCode && $length < self::MAX_CODE_LENGTH) {
+                $length++;
+                $shortCode = $this->createShortCode($originalUrl, $length);
             }
-
+    
+            if (!$shortCode) {
+                throw new AppException("Failed to generate a unique code after multiple attempts");
+            }
+        }
+    
+        try {
             $sql = "INSERT INTO links (user_id, original_url, short_code, custom_domain, created_at) 
                     VALUES (:user_id, :original_url, :short_code, :custom_domain, NOW()) 
                     RETURNING id";
-
+    
             $stmt = $conn->prepare($sql);
             $stmt->execute([
                 ':user_id' => $userId,
@@ -57,17 +54,13 @@ class Link
             ]);
             $result = $stmt->fetch(\PDO::FETCH_ASSOC);
             $linkId = $result['id'];
-
-            $conn->commit();
-
+    
             $cacheKey = "short_code_{$shortCode}";
             $link = $this->getById($linkId);
             $this->cache->set($cacheKey, $link, self::CACHE_TTL);
-
+    
             return $link;
-
         } catch (PDOException $e) {
-            $conn->rollBack();
             throw new AppException("Database error: " . $e->getMessage());
         }
     }
