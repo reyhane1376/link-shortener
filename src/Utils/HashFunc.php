@@ -46,31 +46,4 @@ class HashFunc {
         
         return $result ?: '0';
     }
-    
-    /**
-     * Generate a collision-resistant unique short code
-     * 
-     * @param string $url The URL to encode
-     * @param array $existingCodes Array of existing codes to check against
-     * @param int $length The desired length of the short code
-     * @return string The generated collision-free short code
-     */
-    public static function generateUniqueCode($url, $existingCodes = [], $length = 6) {
-        $attempts = 0;
-        $maxAttempts = 5;
-        
-        do {
-            // Add attempt number to ensure different hashes on retry
-            $shortCode = self::generateShortCode($url . $attempts, $length);
-            $attempts++;
-            
-            // Check if code already exists
-            if (!in_array($shortCode, $existingCodes)) {
-                return $shortCode;
-            }
-        } while ($attempts < $maxAttempts);
-        
-        // If all attempts failed, increase the length and try again
-        return self::generateUniqueCode($url, $existingCodes, $length + 1);
-    }
 }

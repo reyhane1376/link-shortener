@@ -4,32 +4,41 @@ namespace App\Models;
 use App\Database\Database;
 use App\Exceptions\AppException;
 use App\Utils\HashFunc;
+use App\Utils\Cache;
 use PDOException;
 
 class Link {
     private $db;
+    private $cache;
     
     public function __construct() {
         $this->db = new Database();
+        $this->cache = new Cache();
     }
     
     public function create($userId, $originalUrl, $customDomain = null) {
-
         $conn = $this->db->getConnection();
         
         try {
             $conn->beginTransaction();
-        
-            
-            $existingCodes = $this->db->select("SELECT short_code FROM links")->fetchAll(\PDO::FETCH_COLUMN);
-            
-            $shortCode = HashFunc::generateUniqueCode($originalUrl, $existingCodes);
-            
-            $exists = $this->db->select("SELECT id FROM links WHERE short_code = ?", [$shortCode])->fetch();
-            
-            if ($exists) {
-                $conn->rollBack();
-                throw new AppException("Failed to generate a unique code");
+
+            $length = 6;
+            $shortCode = $this->createShortCode($originalUrl, $length);
+
+            if (!$shortCode) {
+                // If we failed to create a short code with the default length,
+                // try with an increased length
+                $maxLength = 10;
+                
+                while (!$shortCode && $length < $maxLength) {
+                    $length++;
+                    $shortCode = $this->createShortCode($originalUrl, $length);
+                }
+                
+                if (!$shortCode) {
+                    $conn->rollBack();
+                    throw new AppException("Failed to generate a unique code after multiple attempts");
+                }
             }
             
             $linkId = $this->db->insert('links', 
@@ -39,7 +48,12 @@ class Link {
             
             $conn->commit();
             
-            return $this->getById($linkId);
+            // Store the short code mapping in cache
+            $cacheKeyShortCode = "short_code_{$shortCode}";
+            $link = $this->getById($linkId);
+            $this->cache->set($cacheKeyShortCode, $link, 86400);
+            
+            return $link;
             
         } catch (PDOException $e) {
             $conn->rollBack();
@@ -68,7 +82,7 @@ class Link {
     public function getByCode($shortCode) {
         $link = $this->db->select("SELECT * FROM links WHERE short_code = ?", [$shortCode])->fetch();
         
-    if (!$link) {
+        if (!$link) {
             throw new AppException("Link not found", 404);
         }
         
@@ -117,16 +131,59 @@ class Link {
     }
     
     public function delete($id, $userId) {
-        // Verify the link exists and belongs to the user
-        $this->getById($id, $userId);
+        // Get the link first to get the short code
+        $link = $this->getById($id, $userId);
+        $shortCode = $link['short_code'];
         
         // Delete the link
         $this->db->execute("DELETE FROM links WHERE id = ? AND user_id = ?", [$id, $userId]);
+        
+        // Delete from cache
+        $cacheKeyShortCode = "short_code_{$shortCode}";
+        $this->cache->delete($cacheKeyShortCode);
+        
+        // Keep the short_code_exists entry to prevent reuse for some time
         
         return true;
     }
     
     public function incrementClicks($id) {
         $this->db->execute("UPDATE links SET clicks = clicks + 1 WHERE id = ?", [$id]);
+    }
+
+    private function createShortCode($originalUrl, $length = 6)
+    {
+        $maxAttempts = 5;
+        $attempts = 0;
+        $shortCode = null;
+        
+        while ($attempts < $maxAttempts) {
+            // Generate a potential short code
+            $potentialCode = HashFunc::generateShortCode($originalUrl . $attempts, $length);
+            $attempts++;
+            
+            // Check if code exists in Redis first
+            $cacheKey = "short_code_{$potentialCode}";
+            $existsInCache = $this->cache->get($cacheKey);
+            
+            if ($existsInCache === null) {
+                // Not in cache, check database
+                $exists = $this->db->select("SELECT id FROM links WHERE short_code = ?", [$potentialCode])->fetch();
+                
+                if (!$exists) {
+                    // Code is unique, we can use it
+                    $shortCode = $potentialCode;
+                    // Add to cache to mark it as used
+                    $this->cache->set($cacheKey, true, 86400);
+                    break;
+                } else {
+                    // Mark as existing in cache for future checks
+                    $this->cache->set($cacheKey, true, 86400);
+                }
+            }
+            // If exists in cache, just continue to next attempt
+        }
+        
+        return $shortCode;
     }
 }
